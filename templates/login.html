@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>设备管理系统 - 登录/注册</title>
+</head>
+<body>
+  <h2>登录 / 注册</h2>
+  <form id="authForm">
+    <label for="username">用户名:</label>
+    <input type="text" id="username" name="username" required><br><br>
+
+    <label for="password">密码:</label>
+    <input type="password" id="password" name="password" required><br><br>
+
+    <button type="submit">登录 / 注册</button>
+  </form>
+
+  <p id="status" style="color:red;"></p>
+
+  <script>
+    document.getElementById('authForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        // 尝试登录
+        let res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (res.status === 200) {
+            let data = await res.json();
+            localStorage.setItem('token', data.token);  // ⬅️ 存 token
+            window.location.href = '/static/index.html';       // 登录成功跳转
+        } else {
+          // 登录失败就尝试注册
+          res = await fetch('/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+
+          if (res.status === 201) {
+            // 注册成功后再登录
+            const loginAgain = await fetch('/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            });
+
+            if (loginAgain.status === 200) {
+                localStorage.setItem('token', data.token);  // ⬅️ 存 token
+                window.location.href = '/static/index.html';       // 登录成功跳转
+            } else {
+              document.getElementById('status').innerText = '登录失败';
+            }
+          } else {
+            document.getElementById('status').innerText = '注册失败';
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('status').innerText = '请求出错';
+      }
+    });
+  </script>
+</body>
+</html>
